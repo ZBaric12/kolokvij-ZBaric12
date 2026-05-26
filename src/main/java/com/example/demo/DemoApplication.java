@@ -1,4 +1,5 @@
 
+
 package com.example.demo;
 
 import org.springframework.boot.SpringApplication;
@@ -19,7 +20,7 @@ public class DemoApplication {
 
         @GetMapping("/hello/{name}")
         public String hello(@PathVariable String name) {
-            return "Hello Unizd!\n";
+            return "Hello1 " + name + "!\n";
         }
     }
 }
