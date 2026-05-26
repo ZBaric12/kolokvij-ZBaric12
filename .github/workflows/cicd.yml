@@ -31,7 +31,7 @@ jobs:
         run: mvn -B package -DskipTests
 
       - name: Login to OCIR
-        uses: oracle-actions/login-ocir@v1.0.1
+        uses: oracle-actions/login-ocir@v1
         with:
           auth_token: ${{ secrets.OCI_AUTH_TOKEN }}
           region: eu-frankfurt-1
