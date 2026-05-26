@@ -5,12 +5,15 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 env:
   IMAGE_NAME: kolokvij/app
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+  OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+  OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+  OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+  OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
 
 jobs:
 
@@ -21,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -41,13 +44,13 @@ jobs:
 
       - name: Tag image
         run: |
-          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} fra.ocir.io/${{ secrets.OCIR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} fra.ocir.io/${{ secrets.OCIR_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} fra.ocir.io/${{ secrets.OCI_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} fra.ocir.io/${{ secrets.OCI_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Push image
         run: |
-          docker push fra.ocir.io/${{ secrets.OCIR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push fra.ocir.io/${{ secrets.OCIR_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
+          docker push fra.ocir.io/${{ secrets.OCI_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push fra.ocir.io/${{ secrets.OCI_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
 
   deploy:
     needs: build
@@ -57,29 +60,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install OCI CLI
-        uses: oracle-actions/install-oci-cli@v1.3.2
-        with:
-          region: ${{ secrets.OCI_CLI_REGION }}
-          user: ${{ secrets.OCI_CLI_USER }}
-          fingerprint: ${{ secrets.OCI_CLI_FINGERPRINT }}
-          tenancy: ${{ secrets.OCI_CLI_TENANCY }}
-          key-content: ${{ secrets.OCI_CLI_KEY_CONTENT }}
-
-      - name: Setup kubeconfig
+      - name: Configure kubectl for OKE
         uses: oracle-actions/configure-kubectl-oke@v1.5.0
         with:
           cluster: ${{ secrets.OKE_CLUSTER_OCID }}
+          region: ${{ secrets.OCI_CLI_REGION }}
 
-      - name: Replace image placeholder
+      - name: Replace IMAGE_PLACEHOLDER
         run: |
-          sed -i 's|IMAGE_PLACEHOLDER|fra.ocir.io/${{ secrets.OCIR_NAMESPACE }}/kolokvij/app:${{ github.sha }}|g' k8s/kolokvij-deploy.yaml
+          sed -i "s|IMAGE_PLACEHOLDER|fra.ocir.io/${{ secrets.OCI_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/kolokvij-deploy.yaml
 
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/kolokvij-deploy.yaml
 
-      - name: Wait for rollout
+      - name: Wait for deployment
         run: |
           kubectl rollout status deployment/kolokvij
 
