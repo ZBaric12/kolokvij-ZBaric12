@@ -20,7 +20,7 @@ public class DemoApplication {
 
         @GetMapping("/hello/{name}")
         public String hello(@PathVariable String name) {
-            return "Hello1 " + name + "!\n";
+            return "Hello2 " + name + "!\n";
         }
     }
 }
