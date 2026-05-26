@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
       - name: kolokvij
-        image: fra.ocir.io/frzram7oywhz/kolokvij/app:1.0
+        image: IMAGE_PLACEHOLDER
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
